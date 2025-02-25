@@ -1,0 +1,74 @@
+---
+- name: Atualizar sistema operacional conforme a distribuição
+  hosts: all
+  gather_facts: no
+  become: yes
+
+  pre_tasks:
+    - name: Coletar fatos sem elevação (evita erro no Windows)
+      setup:
+      become: no
+
+  vars:
+    reboot_required: false
+
+  tasks:
+    - block:
+        - name: Exibir mensagem para sistemas Linux
+          debug:
+            msg: "Iniciando atualização do sistema operacional para {{ ansible_distribution }}..."
+
+        - name: Atualizar sistemas baseados em Debian (apt update e upgrade dist)
+          apt:
+            update_cache: yes
+            upgrade: yes
+          when: ansible_os_family == "Debian"
+          tags: debian
+
+        - name: Atualizar sistemas baseados em RedHat (yum update)
+          yum:
+            name: "*"
+            state: latest
+          when: ansible_os_family == "RedHat"
+          tags: redhat
+      when: ansible_os_family != "Windows"
+
+    - block:
+        - name: Exibir mensagem para sistemas Windows
+          debug:
+            msg: "Sistema Windows identificado. Iniciando atualização..."
+
+        - name: Reiniciar serviço Windows Update (wuauserv)
+          win_service:
+            name: wuauserv
+            state: restarted
+
+        - name: Reiniciar serviço BITS (opcional, mas recomendado)
+          win_service:
+            name: bits
+            state: restarted
+
+        - name: Atualizar sistema operacional Windows (todas as categorias)
+          win_updates:
+            category_names:
+            - Critical Updates
+            - Security Updates
+            - Update Rollups
+            - Feature Packs
+            - Service Packs
+            - Definition Updates
+            - Tools
+            - Updates
+            - Drivers
+            - Upgrades
+            reboot: no  # reinicialização controlada pelo handler ou por outra tarefa
+          register: win_update_result
+          tags: windows
+
+        - name: Definir flag para reinicialização no Windows, se necessário
+          set_fact:
+            reboot_required: "{{ win_update_result.reboot_required | default(false) }}"
+          tags: windows
+      become: no
+      when: ansible_os_family == "Windows"
+  
