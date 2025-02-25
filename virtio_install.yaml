@@ -1,0 +1,58 @@
+---
+- name: Baixar e instalar o MSI x64 do VirtIO Win
+  hosts: all
+  gather_facts: yes
+  vars:
+    base_url: "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio"
+
+  tasks:
+    - name: Delegar a consulta do diretório base para localhost
+      uri:
+        url: "{{ base_url }}/"
+        return_content: yes
+      register: virtio_page
+      delegate_to: localhost
+
+    - name: Extrair subdiretórios com versões
+      set_fact:
+        version_dirs: "{{ virtio_page.content | regex_findall('href=\"(virtio-win-[^\"]+/)\"') }}"
+
+    - name: Validar se a versão informada na Survey existe
+      assert:
+        that:
+          - selected_version in version_dirs
+        fail_msg: "A versão informada ({{ selected_version }}) não está disponível. Verifique as versões disponíveis: {{ version_dirs }}"
+      delegate_to: localhost
+
+    - name: Obter a página do diretório da versão selecionada
+      uri:
+        url: "{{ base_url }}/{{ selected_version }}/"
+        return_content: yes
+      register: version_page
+      delegate_to: localhost
+
+    - name: Extrair links dos arquivos MSI x64 da página
+      set_fact:
+        msi_links: "{{ version_page.content | regex_findall('href=\"([^\"]*x64[^\"]*\\.msi)\"') }}"
+
+    - name: Selecionar o primeiro MSI x64 encontrado
+      set_fact:
+        selected_msi: "{{ msi_links[0] }}"
+      when: msi_links | length > 0
+
+    - name: Construir URL completa do MSI
+      set_fact:
+        msi_url: "{{ base_url }}/{{ selected_version }}/{{ selected_msi }}"
+
+    - name: Baixar o MSI do VirtIO Win x64 para a pasta Downloads do usuário
+      win_get_url:
+        url: "{{ msi_url }}"
+        dest: "{{ ansible_env.USERPROFILE }}\\Downloads\\{{ selected_msi }}"
+      register: download_result
+
+    - name: Instalar o pacote MSI do VirtIO Win de forma assíncrona
+      win_package:
+        path: "{{ ansible_env.USERPROFILE }}\\Downloads\\{{ selected_msi }}"
+        arguments: "/qn"
+      async: 1
+      poll: 0
