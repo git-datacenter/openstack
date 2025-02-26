@@ -50,7 +50,7 @@
 
         - name: Atualizar sistema operacional Windows (todas as categorias)
           win_updates:
-          reboot: no  # reinicialização controlada pelo handler ou por outra tarefa
+            reboot: no  # reinicialização controlada pelo handler ou por outra tarefa
           register: win_update_result
           tags: windows
 
