@@ -54,5 +54,5 @@
       win_package:
         path: "{{ ansible_env.USERPROFILE }}\\Downloads\\{{ selected_msi }}"
         arguments: "/qn"
-      async: 1
+      async: 300
       poll: 0
