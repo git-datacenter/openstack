@@ -50,7 +50,7 @@
 
         - name: Atualizar sistema operacional Windows (todas as categorias)
           win_updates:
-            reboot: no  # reinicialização controlada pelo handler ou por outra tarefa
+            reboot: no  # reinicialização controlada manualmente
           register: win_update_result
           tags: windows
 
@@ -58,6 +58,11 @@
           set_fact:
             reboot_required: "{{ win_update_result.reboot_required | default(false) }}"
           tags: windows
+
+        - name: Notificar sobre reinicialização necessária no Windows
+          debug:
+            msg: "ATENÇÃO: O sistema Windows necessita de reinicialização. Por favor, realize o reboot manualmente."
+          when: reboot_required
+          tags: windows
       become: no
       when: ansible_os_family == "Windows"
-  
