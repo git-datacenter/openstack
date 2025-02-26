@@ -50,18 +50,7 @@
 
         - name: Atualizar sistema operacional Windows (todas as categorias)
           win_updates:
-            category_names:
-            - Critical Updates
-            - Security Updates
-            - Update Rollups
-            - Feature Packs
-            - Service Packs
-            - Definition Updates
-            - Tools
-            - Updates
-            - Drivers
-            - Upgrades
-            reboot: no  # reinicialização controlada pelo handler ou por outra tarefa
+          reboot: no  # reinicialização controlada pelo handler ou por outra tarefa
           register: win_update_result
           tags: windows
 
