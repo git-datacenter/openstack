@@ -1,18 +1,20 @@
 ---
-- name: Testar coleção openstack.cloud
+- name: Testar módulo volume_snapshot sem criar snapshot
   hosts: localhost
   gather_facts: no
   collections:
     - openstack.cloud
 
   tasks:
-    - name: Invocar o módulo server_snapshot (teste)
-      openstack.cloud.server_snapshot:
-        name: "snapshot-teste"
-        server: "fake-server"
+    - name: Chamar volume_snapshot com state=absent em snapshot falso
+      openstack.cloud.volume_snapshot:
+        name: "dummy_snapshot_teste"
+        volume: "dummy_volume_teste"
+        state: absent
+        cloud: "sua_cloud"  # Ajuste se você usa um nome de cloud em clouds.yaml
         wait: no
-      register: result
+      register: test_result
 
-    - name: Mostrar resultado
+    - name: Exibir resultado
       debug:
-        var: result
+        var: test_result
