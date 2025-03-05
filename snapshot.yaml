@@ -1,20 +1,11 @@
 ---
-- name: Testar módulo volume_snapshot sem criar snapshot
-  hosts: localhost
-  gather_facts: no
-  collections:
-    - openstack.cloud
+- name: Criar snapshot no OpenStack
+  hosts: all
+  gather_facts: false
 
   tasks:
-    - name: Chamar volume_snapshot com state=absent em snapshot falso
+    - name: Criar snapshot
       openstack.cloud.volume_snapshot:
-        name: "dummy_snapshot_teste"
-        volume: "dummy_volume_teste"
-        state: absent
-        cloud: "sua_cloud"  # Ajuste se você usa um nome de cloud em clouds.yaml
-        wait: no
-      register: test_result
-
-    - name: Exibir resultado
-      debug:
-        var: test_result
+        state: present
+        name: "{{ snapshot_name }}"
+        volume: "{{ snapshot_volume }}"
