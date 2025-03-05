@@ -1,11 +1,20 @@
 ---
+- name: Instalar a coleção openstack.cloud
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Instalar openstack.cloud via ansible-galaxy
+      community.general.ansible_galaxy:
+        command: install
+        collections:
+          - openstack.cloud
+
 - name: Criar snapshot das instâncias selecionadas
   hosts: all
   gather_facts: no
   tasks:
     - name: Criar snapshot da instância
       openstack.cloud.server_snapshot:
-        # Define o nome do snapshot com o nome do host e a data/hora atual
         name: "snapshot-{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
         server: "{{ inventory_hostname }}"
         wait: yes
