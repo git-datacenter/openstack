@@ -1,5 +1,5 @@
 ---
-- name: Criar snapshot no OpenStack
+- name: Criar snapshot no OpenStack usando o ID do volume
   hosts: all
   gather_facts: false
 
@@ -7,5 +7,5 @@
     - name: Criar snapshot
       openstack.cloud.volume_snapshot:
         state: present
-        name: "{{ snapshot_name }}"
-        volume: "{{ snapshot_volume }}"
+        name: "test_snapshot"
+        volume: "{{ openstack.attached_volumes[0].id }}"
