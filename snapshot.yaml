@@ -7,5 +7,5 @@
     - name: Criar snapshot
       openstack.cloud.volume_snapshot:
         state: present
-        name: "test_snapshot"
+        name: "{{ snapshot_name }}"
         volume: "{{ openstack.attached_volumes[0].id }}"
