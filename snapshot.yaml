@@ -1,13 +1,18 @@
 ---
-- name: Criar snapshot das instâncias selecionadas
-  hosts: all
+- name: Testar coleção openstack.cloud
+  hosts: localhost
+  gather_facts: no
   collections:
     - openstack.cloud
-  gather_facts: false
+
   tasks:
-    - name: Criar snapshot da instância
+    - name: Invocar o módulo server_snapshot (teste)
       openstack.cloud.server_snapshot:
-        name: "snapshot-{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
-        server: "{{ inventory_hostname }}"
-        wait: yes
-      delegate_to: localhost
+        name: "snapshot-teste"
+        server: "fake-server"
+        wait: no
+      register: result
+
+    - name: Mostrar resultado
+      debug:
+        var: result
