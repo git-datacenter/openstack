@@ -1,16 +1,17 @@
 ---
 - name: Atualizar sistema operacional conforme a distribuição
   hosts: all
-  gather_facts: yes
+  gather_facts: no
   become: yes
 
+  pre_tasks:
+    - name: Coletar fatos sem elevação (evita erro no Windows)
+      setup:
+      become: no
+
   vars:
-    # Usado para sinalizar reboot no Windows (caso necessário)
     reboot_required: false
 
-  ##########################################################################
-  # BLOCO PARA SISTEMAS NÃO WINDOWS (ex.: Linux)
-  ##########################################################################
   tasks:
     - block:
         - name: Exibir mensagem para sistemas Linux
@@ -20,20 +21,18 @@
         - name: Atualizar sistemas baseados em Debian (apt update e upgrade dist)
           apt:
             update_cache: yes
-            upgrade: dist  # ou 'yes', conforme necessidade
+            upgrade: yes
           when: ansible_os_family == "Debian"
+          tags: debian
 
         - name: Atualizar sistemas baseados em RedHat (yum update)
           yum:
             name: "*"
             state: latest
           when: ansible_os_family == "RedHat"
+          tags: redhat
       when: ansible_os_family != "Windows"
 
-
-  ##########################################################################
-  # BLOCO PARA SISTEMAS WINDOWS
-  ##########################################################################
     - block:
         - name: Exibir mensagem para sistemas Windows
           debug:
@@ -49,65 +48,44 @@
             name: bits
             state: restarted
 
-        # Primeiro ciclo de instalação
-        - name: Realizar primeira passagem de instalação de updates
+        - name: Atualizar sistema operacional Windows (todas as categorias)
           win_updates:
+            reboot: no  # reinicialização controlada manualmente
             category_names:
-              - Application
-              - Connectors
-              - CriticalUpdates
-              - DefinitionUpdates
-              - DeveloperKits
-              - FeaturePacks
-              - Guidance
-              - SecurityUpdates
-              - ServicePacks
-              - Tools
-              - UpdateRollups
-              - Updates
-              - Upgrades     # Se quiser incluir upgrades maiores (p.ex. build Win10->Win11)
-            accept_all: yes
-            state: installed
-            reboot: no
-          register: pass1
+              - "Critical Updates"
+              - "Security Updates"
+              - "Definition Updates"
+              - "Update Rollups"
+              - "Feature Packs"
+              - "Service Packs"
+          register: win_update_result
+          tags: windows
 
-        - name: Realizar reboot se necessário (1ª passagem)
-          win_reboot:
-            reboot_timeout: 3600
-          when: pass1.reboot_required
+        - name: Definir flag para reinicialização no Windows, se necessário
+          set_fact:
+            reboot_required: "{{ win_update_result.reboot_required | default(false) }}"
+          tags: windows
 
-        # Segundo ciclo (e demais) até não haver mais atualizações pendentes
-        - name: Realizar segunda (ou mais) passagens até zerar pendências
-          win_updates:
-            category_names:
-              - Application
-              - Connectors
-              - CriticalUpdates
-              - DefinitionUpdates
-              - DeveloperKits
-              - FeaturePacks
-              - Guidance
-              - SecurityUpdates
-              - ServicePacks
-              - Tools
-              - UpdateRollups
-              - Updates
-              - Upgrades
-            accept_all: yes
-            state: installed
-            reboot: no
-          register: pass2
-          until: pass2.updates | length == 0
-          retries: 3        # número de tentativas (ajuste conforme desejar)
-          delay: 60         # tempo (segundos) entre cada tentativa
-
-        - name: Realizar reboot se necessário (2ª passagem)
-          win_reboot:
-            reboot_timeout: 3600
-          when: pass2.reboot_required
-
-        - name: Informar conclusão das instalações
+        - name: Notificar sobre reinicialização necessária no Windows
           debug:
-            msg: "Atualizações concluídas no Windows. Se ainda houver pendências, favor verificar manualmente."
+            msg: "ATENÇÃO: O sistema Windows necessita de reinicialização. Por favor, realize o reboot manualmente."
+          when: reboot_required
+          tags: windows
+
+        - name: Criar diretório para relatório
+          win_file:
+            path: C:\log_update
+            state: directory
+            force: yes
+          tags: windows
+
+        - name: Gerar relatório dos updates aplicados
+          win_copy:
+            dest: C:\log_update\update_report.txt
+            content: |
+              Atualização realizada em {{ ansible_date_time.iso8601 }}
+              Resultado dos updates:
+              {{ win_update_result | to_nice_json }}
+          tags: windows
       become: no
       when: ansible_os_family == "Windows"
