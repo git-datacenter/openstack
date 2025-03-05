@@ -1,6 +1,6 @@
 ---
 - name: Criar snapshot no OpenStack usando o ID do volume
-  hosts: localhost
+  hosts: all
   gather_facts: false
 
   tasks:
@@ -9,3 +9,5 @@
         state: present
         name: "{{ snapshot_name }}"
         volume: "{{ openstack.attached_volumes[0].id }}"
+      delegate_to: localhost
+      run_once: true
