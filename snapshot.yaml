@@ -1,6 +1,6 @@
 ---
 - name: Criar snapshot no OpenStack usando o ID do volume
-  hosts: all
+  hosts: localhost
   gather_facts: false
 
   tasks:
