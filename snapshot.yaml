@@ -1,7 +1,9 @@
 ---
 - name: Criar snapshot das instâncias selecionadas
   hosts: all
-  gather_facts: no
+  collections:
+    - openstack.cloud
+  gather_facts: false
   tasks:
     - name: Criar snapshot da instância
       openstack.cloud.server_snapshot:
